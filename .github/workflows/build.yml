@@ -1,0 +1,69 @@
+name: Build Python 3.7.17 for QNAP
+
+on:
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-22.04
+
+    steps:
+      - name: Build Python 3.7.17
+        run: |
+          docker run --rm \
+            -v "$GITHUB_WORKSPACE:/work" \
+            oraclelinux:7 \
+            bash -c '
+              set -e
+
+              yum install -y \
+                gcc \
+                gcc-c++ \
+                make \
+                wget \
+                tar \
+                gzip \
+                bzip2 \
+                bzip2-devel \
+                zlib-devel \
+                openssl-devel \
+                libffi-devel \
+                sqlite-devel \
+                xz-devel \
+                readline-devel \
+                ncurses-devel
+
+              cd /work
+
+              wget -q https://www.python.org/ftp/python/3.7.17/Python-3.7.17.tgz
+              tar -xzf Python-3.7.17.tgz
+              cd Python-3.7.17
+
+              ./configure \
+                --prefix=/opt/python37 \
+                --enable-shared \
+                --with-ensurepip=no
+
+              make -j$(nproc)
+              make install
+
+              mkdir -p /work/python37/lib
+              cp -a /opt/python37/. /work/python37/
+
+              tar -czf /work/python37-qnap.tar.gz -C /work python37
+
+              echo "===== PYTHON ====="
+              /opt/python37/bin/python3.7 --version
+
+              echo "===== LIBPYTHON ====="
+              ls -lh /opt/python37/lib/libpython3.7m.so*
+
+              echo "===== GLIBC REQUIREMENTS ====="
+              strings /opt/python37/bin/python3.7 | grep GLIBC_ | sort -u
+            '
+
+      - name: Upload Python 3.7.17
+        uses: actions/upload-artifact@v4
+        with:
+          name: python37-qnap
+          path: python37-qnap.tar.gz
