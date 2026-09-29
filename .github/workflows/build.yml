@@ -58,6 +58,15 @@ jobs:
               echo "LD_LIBRARY_PATH=$LD_LIBRARY_PATH"
               
               /opt/python37/bin/python3.7 --version
+
+              echo "===== EMPAQUETANDO ====="
+              mkdir -p /work/python37
+              cp -a /opt/python37/. /work/python37/
+              
+              tar -czf /work/python37-qnap.tar.gz -C /work python37
+              
+              echo "===== ARCHIVO ====="
+              ls -lh /work/python37-qnap.tar.gz
               
               echo "===== GLIBC ====="
               strings /opt/python37/bin/python3.7 | grep GLIBC_ | sort -u
