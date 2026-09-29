@@ -53,11 +53,11 @@ jobs:
               tar -czf /work/python37-qnap.tar.gz -C /work python37
 
               echo "===== PYTHON ====="
-              /opt/python37/bin/python3.7 --version
+              LD_LIBRARY_PATH=/opt/python37/lib /opt/python37/bin/python3.7 --version
 
               echo "===== LIBPYTHON ====="
               ls -lh /opt/python37/lib/libpython3.7m.so*
-
+              
               echo "===== GLIBC REQUIREMENTS ====="
               strings /opt/python37/bin/python3.7 | grep GLIBC_ | sort -u
             '
