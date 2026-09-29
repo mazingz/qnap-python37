@@ -47,21 +47,19 @@ jobs:
               make -j$(nproc)
               make install
 
-              mkdir -p /work/python37/lib
-              cp -a /opt/python37/. /work/python37/
-
-              tar -czf /work/python37-qnap.tar.gz -C /work python37
-
-              echo "===== CONTENIDO LIB ====="
-              ls -la /opt/python37/lib/
-
-              echo "===== PYTHON ====="
-              LD_LIBRARY_PATH=/opt/python37/lib /opt/python37/bin/python3.7 --version
-
-              echo "===== LIBPYTHON ====="
-              ls -lh /opt/python37/lib/libpython3.7m.so*
+              echo "===== BUSCANDO LIBPYTHON ====="
+              find /opt/python37 -name 'libpython3.7m.so*' -ls 2>/dev/null || true
               
-              echo "===== GLIBC REQUIREMENTS ====="
+              echo "===== CONTENIDO /opt/python37/lib ====="
+              ls -la /opt/python37/lib/
+              
+              echo "===== PYTHON ====="
+              export LD_LIBRARY_PATH=/opt/python37/lib
+              echo "LD_LIBRARY_PATH=$LD_LIBRARY_PATH"
+              
+              /opt/python37/bin/python3.7 --version
+              
+              echo "===== GLIBC ====="
               strings /opt/python37/bin/python3.7 | grep GLIBC_ | sort -u
             '
 
