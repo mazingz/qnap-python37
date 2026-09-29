@@ -52,6 +52,9 @@ jobs:
 
               tar -czf /work/python37-qnap.tar.gz -C /work python37
 
+              echo "===== CONTENIDO LIB ====="
+              ls -la /opt/python37/lib/
+
               echo "===== PYTHON ====="
               LD_LIBRARY_PATH=/opt/python37/lib /opt/python37/bin/python3.7 --version
 
