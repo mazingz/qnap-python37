@@ -1,4 +1,4 @@
-name: Build Python 3.7.17 for QNAP
+name: Build Python 3.7.17 + PyNaCl for QNAP
 
 on:
   workflow_dispatch:
@@ -6,9 +6,9 @@ on:
 jobs:
   build:
     runs-on: ubuntu-22.04
-    
+
     steps:
-      - name: Build Python 3.7.17
+      - name: Build Python 3.7.17 and PyNaCl
         run: |
           docker run --rm \
             -v "$GITHUB_WORKSPACE:/work" \
@@ -31,9 +31,12 @@ jobs:
                 sqlite-devel \
                 xz-devel \
                 readline-devel \
-                ncurses-devel
+                ncurses-devel \
+                git
 
               cd /work
+
+              echo "===== PYTHON 3.7.17 ====="
 
               wget -q https://www.python.org/ftp/python/3.7.17/Python-3.7.17.tgz
               tar -xzf Python-3.7.17.tgz
@@ -47,29 +50,77 @@ jobs:
               make -j$(nproc)
               make install
 
-              echo "===== BUSCANDO LIBPYTHON ====="
-              find /opt/python37 -name 'libpython3.7m.so*' -ls 2>/dev/null || true
-              
-              echo "===== CONTENIDO /opt/python37/lib ====="
-              ls -la /opt/python37/lib/
-              
-              echo "===== PYTHON ====="
+              echo "===== COMPROBANDO PYTHON ====="
+
               export LD_LIBRARY_PATH=/opt/python37/lib
-              echo "LD_LIBRARY_PATH=$LD_LIBRARY_PATH"
-              
+
               /opt/python37/bin/python3.7 --version
 
-              echo "===== EMPAQUETANDO ====="
+              echo "===== LIBSODIUM ====="
+
+              cd /work
+
+              wget -q https://download.libsodium.org/libsodium/releases/libsodium-1.0.18.tar.gz
+              tar -xzf libsodium-1.0.18.tar.gz
+              cd libsodium-1.0.18
+
+              ./configure \
+                --prefix=/opt/libsodium \
+                --disable-shared \
+                --enable-static
+
+              make -j$(nproc)
+              make install
+
+              echo "===== PYNACL ====="
+
+              cd /work
+
+              git clone --depth 1 --branch 1.5.0 https://github.com/pyca/pynacl.git
+
+              cd pynacl
+
+              export PATH=/opt/python37/bin:$PATH
+              export LD_LIBRARY_PATH=/opt/python37/lib
+
+              /opt/python37/bin/python3.7 setup.py build_ext \
+                --include-dirs=/opt/libsodium/include \
+                --library-dirs=/opt/libsodium/lib
+
+              /opt/python37/bin/python3.7 setup.py bdist_egg \
+                --include-dirs=/opt/libsodium/include \
+                --library-dirs=/opt/libsodium/lib
+
+              echo "===== BUSCANDO EGG ====="
+
+              find /work/pynacl/dist -type f -maxdepth 1 -print
+
+              echo "===== PREPARANDO PAQUETE QNAP ====="
+
+              mkdir -p /work/qnap-extra
+              cp /work/pynacl/dist/*.egg /work/qnap-extra/
+
+              echo "===== COPIANDO PYTHON ====="
+
               mkdir -p /work/python37
               cp -a /opt/python37/. /work/python37/
-              
-              tar -czf /work/python37-qnap.tar.gz -C /work python37
-              
-              echo "===== ARCHIVO ====="
+
+              echo "===== LIBPYTHON ====="
+
+              find /work/python37 -name "libpython3.7m.so*" -print
+
+              echo "===== EMPAQUETANDO ====="
+
+              tar -czf /work/python37-qnap.tar.gz \
+                -C /work python37
+
+              tar -czf /work/pynacl-qnap.tar.gz \
+                -C /work qnap-extra
+
+              echo "===== ARCHIVOS FINALES ====="
+
               ls -lh /work/python37-qnap.tar.gz
-              
-              echo "===== GLIBC ====="
-              strings /opt/python37/bin/python3.7 | grep GLIBC_ | sort -u
+              ls -lh /work/pynacl-qnap.tar.gz
             '
 
       - name: Upload Python 3.7.17
@@ -77,3 +128,9 @@ jobs:
         with:
           name: python37-qnap
           path: python37-qnap.tar.gz
+
+      - name: Upload PyNaCl
+        uses: actions/upload-artifact@v4
+        with:
+          name: pynacl-qnap
+          path: pynacl-qnap.tar.gz
