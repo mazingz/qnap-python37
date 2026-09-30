@@ -60,8 +60,9 @@ jobs:
 
               cd /work
 
-              wget -q https://download.libsodium.org/libsodium/releases/libsodium-1.0.18.tar.gz
-              tar -xzf libsodium-1.0.18.tar.gz
+              curl -L -f -o libsodium-1.0.18.tar.gz https://github.com/jedisct1/libsodium/releases/download/1.0.18-RELEASE/libsodium-1.0.18.tar.gz
+              tar -xzf libsodium-1.0.18.tar.gz1
+
               cd libsodium-1.0.18
 
               ./configure \
